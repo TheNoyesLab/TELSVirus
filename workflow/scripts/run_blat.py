@@ -5,6 +5,7 @@ from concurrent.futures import ProcessPoolExecutor
 from itertools import repeat
 from pathlib import Path
 import subprocess
+import sys
 
 
 def parse_args():
@@ -23,6 +24,15 @@ def get_read_clusters(directory):
 def run_blat(cluster, outdir, fast_map):
     cluster_id = Path(cluster).name.split('_rl_clusters.fasta')[0]
     output = Path(outdir) / f'{cluster_id}.psl'
+    # cluster_reads.py names clusters <min_length>_to_<max_length>.
+    if fast_map and int(cluster_id.split('_to_')[1]) > 4999:
+        # An empty PSL yields an empty duplicate list, even if all clusters
+        # are skipped. Overwrite any stale alignments from an earlier run.
+        output.write_text('')
+        print(f'Skipping BLAT deduplication for {cluster_id}: '
+              'maximum read length exceeds 4999 bp with -fastMap; '
+              'retaining all reads in this cluster.', file=sys.stderr)
+        return
     cmd = ['blat']
     if fast_map:
         cmd.append('-fastMap')

@@ -76,7 +76,9 @@ Older configs must rename `silimarity_threshold` to `similarity_threshold`.
 
 ## BLAT Fast Map
 
-`blat_fast_map: true` enables BLAT's `-fastMap` option (the workflow default). Set it to `false` for the more sensitive, potentially much slower search. Keep this setting fixed across a similarity sweep.
+`blat_fast_map: true` enables BLAT's `-fastMap` option (the workflow default). In this mode, any cluster whose maximum read length exceeds 4,999 bp is skipped during deduplication, retaining all reads in that cluster. Reads within each cluster are similar in length to the extent allowed by `similarity_threshold`; the default of `0.9` groups reads closely in length, while more permissive settings allow a wider length range. A skipped cluster may therefore also retain reads below the 5,000-bp cutoff.
+
+Skipped clusters are reported on stderr and produce empty PSL/duplicate-list files, allowing the workflow to continue even if every cluster is skipped. Set `blat_fast_map` to `false` for the more sensitive, potentially much slower search without this cluster-length skip. Keep this setting fixed across a similarity sweep.
 
 ## Runtime and Logs
 
