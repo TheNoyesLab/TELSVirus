@@ -18,10 +18,20 @@ def gen_chunk_list(accessions, n):
     return [accessions[i:i + n] for i in range(0, len(accessions), n)]
 
 def get_sources(accessions):
-    handle = Entrez.efetch(db='nucleotide', rettype='gb', id=','.join(accessions))
-    sources = [line.strip().split('     ')[-1][1:] for line in handle if 'SOURCE' in line]
-    handle.close()
-    return sources
+    acc_to_source = {}
+    try:
+        handle = Entrez.efetch(db='nucleotide', rettype='gb', id=','.join(accessions))
+        current = None
+        for line in handle:
+            if line.startswith('LOCUS'):
+                current = line.split()[1].split('.')[0]   # accession, version stripped
+                acc_to_source[current] = 'NA'             # placeholder until we see its SOURCE
+            elif current and 'SOURCE' in line:
+                acc_to_source[current] = line.strip().split('     ')[-1][1:]
+        handle.close()
+    except Exception:
+        pass
+    return [acc_to_source.get(a.split('.')[0], 'NA') for a in accessions]
 
 def process_chunks(accession_chunk_list):
     results = []

@@ -38,13 +38,25 @@ def divide_chunks(l,n=9999):
 def get_viral_info(accessions):
     viral_info = []
     queries = list(divide_chunks(accessions))
+    NA = ("NA", "NA", "NA")
     for query in queries:
-        handle = Entrez.efetch(db='nucleotide', rettype='gb', retmode='xml', id=','.join(query))
-        data = Entrez.read(handle)
-        features = [GBFeatures(e['GBSeq_feature-table'][0]['GBFeature_quals']) for e in data]
-        viral_info_part = [get_features(f.quals) for f in features]
-        viral_info.extend(viral_info_part)
-        handle.close()
+        try:
+            handle = Entrez.efetch(db='nucleotide', rettype='gb', retmode='xml', id=','.join(query))
+            data = Entrez.read(handle)
+            handle.close()
+        except Exception:
+            viral_info.extend([NA] * len(query))
+            continue
+        if not isinstance(data, list):
+            viral_info.extend([NA] * len(query))
+            continue
+        by_acc = {}
+        for e in data:
+            acc = e.get('GBSeq_id', {}).get('GBSeq_accession-version', '').split('.')[0]
+            quals = e['GBSeq_feature-table'][0]['GBFeature_quals']
+            by_acc[acc] = get_features(GBFeatures(quals).quals)
+        for acc in query:
+            viral_info.append(by_acc.get(acc.split('.')[0], NA))
     return viral_info
 
 
